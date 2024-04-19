@@ -46,10 +46,14 @@ impl TauriOptions {
     let mut map = Map::new();
     map.insert("ms:edgeChromium".into(), json!(true));
     map.insert("browserName".into(), json!("webview2"));
-    map.insert(
-      "ms:edgeOptions".into(),
-      json!({"binary": self.application, "args": self.args, "webviewOptions": self.webview_options}),
-    );
+    let mut edge_options = json!({"binary": self.application, "args": self.args, "webviewOptions": self.webview_options});
+    if let Some(webview_options) = self.webview_options {
+      edge_options
+        .as_object_mut()
+        .unwrap()
+        .insert("webviewOptions".into(), webview_options);
+    }
+    map.insert("ms:edgeOptions".into(), edge_options);
     map
   }
 }
