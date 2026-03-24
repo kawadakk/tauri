@@ -20,9 +20,9 @@ use hyper_util::{
 };
 use serde::Deserialize;
 use serde_json::{json, Map, Value};
-use std::path::PathBuf;
 use std::process::Child;
-use tokio::net::TcpListener;
+use std::{path::PathBuf, time::Duration};
+use tokio::net::{TcpListener, TcpStream};
 
 const TAURI_OPTIONS: &str = "tauri:options";
 
@@ -192,6 +192,16 @@ pub async fn run(args: Args, mut _driver: Child) -> Result<(), Error> {
     });
     (signals_handle, signals_task)
   };
+
+  // Wait for the driver to come online before starting our own server.
+  // WebDriver clients such as wasm-bindgen-test-runner expect us to be ready
+  // to serve requests as soon as we start accepting TCP connections.
+  while TcpStream::connect(("127.0.0.1", args.native_port))
+    .await
+    .is_err()
+  {
+    tokio::time::sleep(Duration::from_millis(100)).await;
+  }
 
   let address = std::net::SocketAddr::from(([127, 0, 0, 1], args.port));
 
